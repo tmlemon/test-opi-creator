@@ -1,9 +1,33 @@
-from org.csstudio.opibuilder.scriptUtil import PVUtil,ConsoleUtil,FileUtil,GUIUtil,ScriptUtil,DataUtil
-import os
-from time import sleep
 
+'''
+Author: Tyler Lemon
+Date: 2020-05-06
+GitHub repo: https://github.com/tmlemon/test-opi-creator
+
+Python program embedded into Control Systems Studio (CS-Studio, or CSS)
+GUI to replace all PVs in the screen set by the program's input with
+local PVs for testing.
+
+End result of program are two screens: a test screen and a control screen.
+The test screen is a copy of the input screen with all PVs changed to local
+PVs. The control screen is a copy of the test screen with all indicators
+changed to controls (and visa versa) and Boolean controls added for all PVs
+used in screen to trigger rules.
+
+This program is not executable from standard Python environment since it
+relies on Jython functions in CS-Studio.
+
+'''
+#Jython functions from CS-Studio (CSS)
+from org.csstudio.opibuilder.scriptUtil import PVUtil,ConsoleUtil,FileUtil,GUIUtil,ScriptUtil,DataUtil
+
+import os # used to look at and manipulate files in workspace
+from time import sleep # used to add delays to program
+
+# background color to change program output's Control Screen to 
 testBKG = ['255','255','0']
 
+# Template of Boolean control widget to add to control screen for rule testing
 trigButton = \
 ['  <widget typeId="org.csstudio.opibuilder.widgets.BoolButton" version="1.0.0">',\
 '    <toggle_button>true</toggle_button>',\
@@ -67,14 +91,19 @@ trigButton = \
 '    <off_label>$(pv_name)</off_label>',\
 '  </widget>']
 
-
+# function used during debugging to print info to CSS console
 def cssprint(l):
     ConsoleUtil.writeInfo(str(l))
 
+# read in file to create test screens for
 fin = str(PVUtil.getString(pvs[1]))[1:]
+
+# read in go button to initiate screen creation
 go = PVUtil.getDouble(pvs[0]) == 1
 
+# flag used to include PV in rules list if macros are used
 macroFlag = False
+
 
 if go and fin != '':
     fin = str(FileUtil.workspacePathToSysPath(fin))
@@ -83,12 +112,15 @@ if go and fin != '':
 
     pvs[2].setValue('Making test screens.')
 
+
+    # Ask if user wants to remake test screens if they aleady exist
     if os.path.isfile(testFin) or os.path.isfile(testCtrlFin):
         remake = GUIUtil.openConfirmDialog(\
             'Test screens already exist. Remake screens?')
     else:
         remake = True
-    
+
+    # deletes old files if they are to be remade
     if remake:
         try:
             os.remove(testFin)
@@ -98,10 +130,11 @@ if go and fin != '':
             # that means file isn't there
             pass
 
-        
+        # reads in screen to make test versions of
         with open(fin,'r') as f:
             opi = f.readlines()
-            
+
+        # pulls out all widgets' PVs and PVs used to trigger rules
         testpvs = []
         rulepvs = []
         for m,line in enumerate(opi):
@@ -123,6 +156,7 @@ if go and fin != '':
         testpvs = list(set(testpvs))
         testpvs.sort()
 
+        # debugging fun
         #for banana in testpvs:
         #    cssprint(banana)
         
@@ -130,7 +164,7 @@ if go and fin != '':
         rulepvs.sort()
 
         
-        
+        # create test screen, replacing all PVs with local PVs
         opiTest = opi
         opi = ''.join(opi)
 
@@ -140,11 +174,13 @@ if go and fin != '':
         with open(testFin,'w') as f:
             f.write(opi)
 
+
+        # creates control screen, replaceing all controls with
+        # indicators and visa versa.
         xStart = int(opi[opi.find('<width>')+7:opi.find('</width>')])+50
         yLimit = int(opi[opi.find('<height>')+8:opi.find('</height>')])
         ruleCtrlHeight = 50
         
-
         hold = []
         for line in opiTest:
             if 'TextUpdate' in line:
@@ -168,12 +204,11 @@ if go and fin != '':
                 bkgFound = True
             hold.append(line)
 
-
         lastLine = hold[-1]
         hold = hold[:-1]
 
 
-
+        # places boolean controls on control screen for testing rules
         xPos = xStart
         yPos = 25
         for v in rulepvs:
@@ -197,10 +232,12 @@ if go and fin != '':
         with open(testCtrlFin,'w') as f:\
              f.write(opiTest)
 
+    # wait five seconds before printing success message.
+    # Gives workspace time to update and find new screens to open
     sleep(5)
     pvs[2].setValue('TEST SCREENS CREATED')    
     
-
+    # opens test screen and control screen
     ScriptUtil.openOPI(widget,testFin,2,None)
     ScriptUtil.openOPI(widget,testCtrlFin,2,None)
     
