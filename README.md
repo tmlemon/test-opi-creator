@@ -11,6 +11,9 @@ End result of program are two screens: a test screen and a control screen. The t
     *  CS-Studio screen with embedded program.
     *  Put this OPI in your CS-Studio workspace and run it to open GUI for program.
 
+*  *make-test-screens_with-PV-check.opi*
+    *  CSS-Studio screen with embedded program that includes the ability to check PVs on the screen.
+
 *  *make-test-version.py*
-    *  Python program embedded into *make-test-screens.opi*.
+    *  Python program embedded into OPI files.
     *  Program is not executable from Python environment since it relies on Jython functions in CS-Studio.
