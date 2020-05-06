@@ -1,28 +1,27 @@
-
 '''
 Author: Tyler Lemon
 Date: 2020-05-06
 GitHub repo: https://github.com/tmlemon/test-opi-creator
-
 Python program embedded into Control Systems Studio (CS-Studio, or CSS)
 GUI to replace all PVs in the screen set by the program's input with
 local PVs for testing.
-
 End result of program are two screens: a test screen and a control screen.
 The test screen is a copy of the input screen with all PVs changed to local
 PVs. The control screen is a copy of the test screen with all indicators
 changed to controls (and visa versa) and Boolean controls added for all PVs
 used in screen to trigger rules.
-
 This program is not executable from standard Python environment since it
 relies on Jython functions in CS-Studio.
-
 '''
 #Jython functions from CS-Studio (CSS)
 from org.csstudio.opibuilder.scriptUtil import PVUtil,ConsoleUtil,FileUtil,GUIUtil,ScriptUtil,DataUtil
 
 import os # used to look at and manipulate files in workspace
 from time import sleep # used to add delays to program
+import xml.etree.ElementTree as ET #used for parsing input OPI for PV check
+import math #for math stuff
+
+
 
 # background color to change program output's Control Screen to 
 testBKG = ['255','255','0']
@@ -95,6 +94,13 @@ trigButton = \
 def cssprint(l):
     ConsoleUtil.writeInfo(str(l))
 
+# returns distance between two points. Used in PV check.
+def distance(pvcoor,labelcoor):
+    x1,y1 = pvcoor
+    x2,y2 = labelcoor
+    d = math.sqrt((x2-x1)**2+(y2-y1)**2)
+    return(d)
+
 # read in file to create test screens for
 fin = str(PVUtil.getString(pvs[1]))[1:]
 
@@ -104,14 +110,122 @@ go = PVUtil.getDouble(pvs[0]) == 1
 # flag used to include PV in rules list if macros are used
 macroFlag = False
 
+check = PVUtil.getDouble(pvs[3]) == 1
 
 if go and fin != '':
     fin = str(FileUtil.workspacePathToSysPath(fin))
+
+    # performs PV check if selected
+    if check:
+        # read in and parse OPI file for relevant info
+        tree = ET.parse(fin)
+        root = tree.getroot()
+        relevant = ['x','y','height','width','pv_name','text','widget_type']
+        screenProps = {}
+        widgets = []
+        macros = {}
+        for child in root:
+            if child.tag in relevant:
+                if child.tag == 'background_color' or child.tag == 'foreground_color':
+                    screenProps[child.tag] = colorMatch(child)
+                else:
+                    screenProps[child.tag] = child.text
+            if child.tag == 'widget':
+                hold = {}
+                for prop in child:
+                    if prop.tag in relevant and prop.text != None:
+                        if prop.tag == 'background_color' or prop.tag == 'foreground_color':
+                            hold[prop.tag] = colorMatch(prop)
+                        elif prop.tag == 'pv_name' and '$' in prop.text:
+                            if prop.text.split(')')[0]+')' not in macros:
+                                print('Macro detected: '+prop.text.split(')')[0]+')')
+                                repl = str(input('Enter replacement: '))
+                                macros[prop.text.split(')')[0]+')'] = repl
+                            pvFixed = prop.text.replace(prop.text.split(')')[0]+')',macros[prop.text.split(')')[0]+')'])
+                            hold[prop.tag] = pvFixed            
+                        else:
+                            hold[prop.tag] = prop.text
+                widgets.append(hold)
+
+        #labels of units should be excluded from check
+        unitsLabels = ['K']
+
+        labels = []
+        indicators = [] 
+        for item in widgets:
+            if item['widget_type'] == 'Text Update' or item['widget_type'] == 'Rectangle':
+                if 'pv_name' in list(item.keys()):
+                    del item['widget_type']
+                    if 'text' in list(item.keys()):
+                        del item['text']
+                    indicators.append(item)
+            elif item['widget_type'] == 'Label':
+                if 'text' in list(item.keys()):
+                    if item['text'] not in unitsLabels:
+                        del item['widget_type']
+                        labels.append(item)
+
+        #finds the closest label to each widget with a PV
+        sets = []
+        for indicator in indicators:
+            pv = indicator['pv_name']
+            pvCoor = [int(indicator['x']),int(indicator['y'])]
+            dMin = 999999
+            keep = 999999
+            for q,label in enumerate(labels):
+                labelCoor = [int(label['x']),int(label['y'])]
+                dist = distance(pvCoor,labelCoor)
+                if dist <= dMin:
+                    dMin = dist
+                    keep = q
+            sets.append([labels[keep],indicator])
+
+        # checks widget PVs and closest label to see how well they match
+        # OKAY = label found directly in PV or with _ removed
+        # VERIFY = Some minor discrepancies, like extra _ or LHe or LN2 in one
+        # BAD = Major discrepancies found between labels
+        OKAY = []
+        VERIFY = []
+        BAD = []
+        for l,p in sets:
+            l = l['text']
+            p = p['pv_name']
+            if l in p:
+                OKAY.append([l,p])
+            elif l in p.replace('_',''):
+                OKAY.append([l,p])
+            elif l.lower().replace(' ','') in p.lower().replace('_',''):
+                VERIFY.append([l,p])
+            elif l.lower().replace(' ','') in p.replace('He','').replace('LN2','').lower().replace('_',''):
+                VERIFY.append([l,p])
+            else:
+                BAD.append([l,p])
+
+        # formats and displays check results in pop-up window
+        checkOut = ''
+        checkOut += 'PV VERIFICATION RESULTS\n'
+        checkOut += 'Total number of PVs checked:'+str(len(OKAY)+len(VERIFY)+len(BAD)) + '\n\n'
+        if len(OKAY) != 0:
+            checkOut += 'PVs that checked out:\n------------------------\n'
+            for item in OKAY:
+                checkOut += item[1]+'\n'
+        if len(VERIFY) != 0:
+            checkOut += '\n\nPVs that should be checked:\n------------------------------\n'
+            for item in VERIFY:
+                checkOut += item[1]+'\n'        
+        if len(BAD) != 0:
+            checkOut += '\n\nPVs that may be incorrect:\n------------------------------\nIndicator Label, PV of Indicator\n'
+            for item in BAD:
+                checkOut += item[0]+', '+item[1]+'\n'
+        checkOut += '\n\nSelect any option below to close.'
+        checkRes = GUIUtil.openConfirmDialog(checkOut)
+
+
+ 
     testFin = fin.split('.')[0]+'_TEST.opi'
     testCtrlFin = fin.split('.')[0]+'_TEST-CONTROL.opi'
 
     pvs[2].setValue('Making test screens.')
-
 
     # Ask if user wants to remake test screens if they aleady exist
     if os.path.isfile(testFin) or os.path.isfile(testCtrlFin):
@@ -155,10 +269,6 @@ if go and fin != '':
                     
         testpvs = list(set(testpvs))
         testpvs.sort()
-
-        # debugging fun
-        #for banana in testpvs:
-        #    cssprint(banana)
         
         rulepvs = list(set(rulepvs))
         rulepvs.sort()
@@ -243,5 +353,3 @@ if go and fin != '':
     
     pvs[2].setValue('')
     pvs[0].setValue(0)
-   
-
