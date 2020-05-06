@@ -8,7 +8,9 @@ End result of program are two screens: a test screen and a control screen. The t
 **Repository Contents:**
 
 *  *make-test-screens.opi*
-    *  CS-Studio screen with embedded program. Put this OPI in your CS-Studio workspace and run it to open GUI for program.
+    *  CS-Studio screen with embedded program.
+    *  Put this OPI in your CS-Studio workspace and run it to open GUI for program.
 
 *  *make-test-version.py*
-    *  Python program embedded into *make-test-screens.opi*. Program is not executable from Python environment since it relies on Jython functions in CS-Studio.
+    *  Python program embedded into *make-test-screens.opi*.
+    *  Program is not executable from Python environment since it relies on Jython functions in CS-Studio.
