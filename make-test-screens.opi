@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<display typeId="org.csstudio.opibuilder.Display" version="1.0.0">
+  <show_close_button>true</show_close_button>
+  <rules />
+  <wuid>-4f5bdc12:1718381ff4c:-7a12</wuid>
+  <show_grid>true</show_grid>
+  <auto_zoom_to_fit_all>false</auto_zoom_to_fit_all>
+  <scripts />
+  <height>400</height>
+  <macros>
+    <include_parent_macros>true</include_parent_macros>
+  </macros>
+  <boy_version>4.0.103.201507131348</boy_version>
+  <show_edit_range>true</show_edit_range>
+  <widget_type>Display</widget_type>
+  <auto_scale_widgets>
+    <auto_scale_widgets>false</auto_scale_widgets>
+    <min_width>-1</min_width>
+    <min_height>-1</min_height>
+  </auto_scale_widgets>
+  <background_color>
+    <color red="192" green="192" blue="192" />
+  </background_color>
+  <width>800</width>
+  <x>-1</x>
+  <name></name>
+  <grid_space>6</grid_space>
+  <show_ruler>true</show_ruler>
+  <y>-1</y>
+  <snap_to_geometry>true</snap_to_geometry>
+  <foreground_color>
+    <color red="192" green="192" blue="192" />
+  </foreground_color>
+  <actions hook="false" hook_all="false" />
+  <widget typeId="org.csstudio.opibuilder.widgets.BoolButton" version="1.0.0">
+    <toggle_button>false</toggle_button>
+    <border_style>0</border_style>
+    <forecolor_alarm_sensitive>false</forecolor_alarm_sensitive>
+    <alarm_pulsing>false</alarm_pulsing>
+    <tooltip>$(pv_name)
+$(pv_value)</tooltip>
+    <push_action_index>0</push_action_index>
+    <rules />
+    <effect_3d>true</effect_3d>
+    <bit>-1</bit>
+    <enabled>true</enabled>
+    <wuid>-4f5bdc12:1718381ff4c:-77c9</wuid>
+    <on_color>
+      <color red="0" green="255" blue="0" />
+    </on_color>
+    <show_confirm_dialog>0</show_confirm_dialog>
+    <password></password>
+    <pv_value />
+    <released_action_index>0</released_action_index>
+    <square_button>true</square_button>
+    <show_led>false</show_led>
+    <scripts>
+      <path pathString="EmbeddedPy" checkConnect="true" sfe="false" seoe="false">
+        <scriptName>make-test-version</scriptName>
+        <scriptText><![CDATA[from org.csstudio.opibuilder.scriptUtil import PVUtil,ConsoleUtil,FileUtil,GUIUtil,ScriptUtil,DataUtil
+import os
+from time import sleep
+
+testBKG = ['255','255','0']
+
+trigButton = \
+['  <widget typeId="org.csstudio.opibuilder.widgets.BoolButton" version="1.0.0">',\
+'    <toggle_button>true</toggle_button>',\
+'    <border_style>0</border_style>',\
+'    <forecolor_alarm_sensitive>false</forecolor_alarm_sensitive>',\
+'    <alarm_pulsing>false</alarm_pulsing>',\
+'    <tooltip>$(pv_name)',\
+'$(pv_value)</tooltip>',\
+'    <push_action_index>0</push_action_index>',\
+'    <rules />',\
+'    <effect_3d>true</effect_3d>',\
+'    <bit>-1</bit>',\
+'    <enabled>true</enabled>',\
+'    <wuid>-1a33cb2f:171dfb9c376:-79e8</wuid>',\
+'    <on_color>',\
+'      <color red="0" green="255" blue="0" />',\
+'    </on_color>',\
+'    <show_confirm_dialog>0</show_confirm_dialog>',\
+'    <password></password>',\
+'    <pv_value />',\
+'    <released_action_index>0</released_action_index>',\
+'    <square_button>true</square_button>',\
+'    <show_led>false</show_led>',\
+'    <scripts />',\
+'    <border_alarm_sensitive>true</border_alarm_sensitive>',\
+'    <height>50</height>',\
+'    <on_label>$(pv_name)</on_label>',\
+'    <border_width>1</border_width>',\
+'    <scale_options>',\
+'      <width_scalable>true</width_scalable>',\
+'      <height_scalable>true</height_scalable>',\
+'      <keep_wh_ratio>true</keep_wh_ratio>',\
+'    </scale_options>',\
+'    <visible>true</visible>',\
+'    <pv_name>PV-NAME</pv_name>'\
+'    <border_color>',\
+'      <color red="0" green="128" blue="255" />',\
+'    </border_color>',\
+'    <widget_type>Boolean Button</widget_type>',\
+'    <off_color>',\
+'      <color red="0" green="100" blue="0" />',\
+'    </off_color>',\
+'    <confirm_message>Are your sure you want to do this?</confirm_message>',\
+'    <backcolor_alarm_sensitive>false</backcolor_alarm_sensitive>',\
+'    <background_color>',\
+'      <color red="240" green="240" blue="240" />',\
+'    </background_color>',\
+'    <width>275</width>',\
+'    <x>X_POS</x>',\
+'    <name>Boolean Button</name>',\
+'    <data_type>0</data_type>',\
+'    <y>Y_POS</y>',\
+'    <foreground_color>',\
+'      <color red="0" green="0" blue="0" />',\
+'    </foreground_color>',\
+'    <actions hook="false" hook_all="false" />',\
+'    <show_boolean_label>true</show_boolean_label>',\
+'    <font>',\
+'      <opifont.name fontName="Segoe UI" height="9" style="0">Default</opifont.name>',\
+'    </font>',\
+'    <off_label>$(pv_name)</off_label>',\
+'  </widget>']
+
+
+def cssprint(l):
+    ConsoleUtil.writeInfo(str(l))
+
+fin = str(PVUtil.getString(pvs[1]))[1:]
+go = PVUtil.getDouble(pvs[0]) == 1
+
+macroFlag = False
+
+if go and fin != '':
+    fin = str(FileUtil.workspacePathToSysPath(fin))
+    testFin = fin.split('.')[0]+'_TEST.opi'
+    testCtrlFin = fin.split('.')[0]+'_TEST-CONTROL.opi'
+
+    pvs[2].setValue('Making test screens.')
+
+    if os.path.isfile(testFin) or os.path.isfile(testCtrlFin):
+        remake = GUIUtil.openConfirmDialog(\
+            'Test screens already exist. Remake screens?')
+    else:
+        remake = True
+    
+    if remake:
+        try:
+            os.remove(testFin)
+            os.remove(testCtrlFin)
+        except:
+            # if either file remove doesn't work, continue since
+            # that means file isn't there
+            pass
+
+        
+        with open(fin,'r') as f:
+            opi = f.readlines()
+            
+        testpvs = []
+        rulepvs = []
+        for m,line in enumerate(opi):
+            if '<pv trig="true">' in line:
+                out = line[line.find('>')+1:]
+                out = out[:out.find('<')]
+                if 'sim' not in out and '$(pv_name)' not in out:
+                    testpvs.append(out)
+                    rulepvs.append(out)
+                if out == '$(pv_name)':
+                    macroFlag = True
+            if '<pv_name>' in line and line.strip() != '<pv_name></pv_name>':
+                foundPV = line.strip().replace('<pv_name>','').replace('</pv_name>','')
+                testpvs.append(foundPV)
+                if macroFlag:
+                    rulepvs.append(foundPV)
+                    macroFlag = False
+                    
+        testpvs = list(set(testpvs))
+        testpvs.sort()
+
+        #for banana in testpvs:
+        #    cssprint(banana)
+        
+        rulepvs = list(set(rulepvs))
+        rulepvs.sort()
+
+        
+        
+        opiTest = opi
+        opi = ''.join(opi)
+
+        for pv in testpvs:
+            opi = opi.replace(pv,'loc://'+pv+'(0)')
+
+        with open(testFin,'w') as f:
+            f.write(opi)
+
+        xStart = int(opi[opi.find('<width>')+7:opi.find('</width>')])+50
+        yLimit = int(opi[opi.find('<height>')+8:opi.find('</height>')])
+
+        hold = []
+        for line in opiTest:
+            if 'TextUpdate' in line:
+                line = line.replace('TextUpdate','TextInput')
+            elif 'TextInput' in line:
+                line = line.replace('TextInput','TextUpdate')
+            hold.append(line)
+
+        opiTest = hold
+
+        hold = []
+        bkgFound = False
+        for line in opiTest:
+            if '<color red="' in line.strip() and not bkgFound:
+                line = line.split('"')
+                modline = []
+                for p in range(0,len(line),2):
+                    modline.append(str(line[p]))
+                line = modline[0]+'"'+testBKG[0]+'"'+modline[1]+'"'+\
+                       testBKG[1]+'"'+modline[2]+'"'+testBKG[2]+'"'+modline[3]
+                bkgFound = True
+            hold.append(line)
+
+
+        lastLine = hold[-1]
+        hold = hold[:-1]
+
+
+
+        xPos = xStart
+        yPos = 25
+        for v in rulepvs:
+            for line in trigButton:
+                line2 = line.replace('PV-NAME',v+'(0)')
+                line2 = line2.replace('X_POS',str(xPos))
+                line2 = line2.replace('Y_POS',str(yPos))
+                line2 += '\n'
+                hold.append(line2)
+            yPos += 60
+            if yPos >= yLimit:
+                yPos = 25
+                xPos += 300
+        hold.append(lastLine)
+        
+        opiTest = ''.join(hold)
+        
+        for pv in testpvs:
+            opiTest = opiTest.replace(pv,'loc://'+pv)
+
+        with open(testCtrlFin,'w') as f:\
+             f.write(opiTest)
+
+    sleep(5)
+    pvs[2].setValue('TEST SCREENS CREATED')    
+    
+
+    ScriptUtil.openOPI(widget,testFin,2,None)
+    ScriptUtil.openOPI(widget,testCtrlFin,2,None)
+    
+    pvs[2].setValue('')
+    pvs[0].setValue(0)
+   
+
+]]></scriptText>
+        <pv trig="true">$(pv_name)</pv>
+        <pv trig="false">loc://screenToTest</pv>
+        <pv trig="false">loc://status</pv>
+      </path>
+    </scripts>
+    <border_alarm_sensitive>true</border_alarm_sensitive>
+    <height>50</height>
+    <on_label>MAKING SCREENS</on_label>
+    <border_width>1</border_width>
+    <scale_options>
+      <width_scalable>true</width_scalable>
+      <height_scalable>true</height_scalable>
+      <keep_wh_ratio>true</keep_wh_ratio>
+    </scale_options>
+    <visible>true</visible>
+    <pv_name>loc://GO(0)</pv_name>
+    <border_color>
+      <color red="0" green="128" blue="255" />
+    </border_color>
+    <widget_type>Boolean Button</widget_type>
+    <off_color>
+      <color red="0" green="100" blue="0" />
+    </off_color>
+    <confirm_message>Are your sure you want to do this?</confirm_message>
+    <backcolor_alarm_sensitive>false</backcolor_alarm_sensitive>
+    <background_color>
+      <color red="240" green="240" blue="240" />
+    </background_color>
+    <width>347</width>
+    <x>90</x>
+    <name>Boolean Button</name>
+    <data_type>0</data_type>
+    <y>162</y>
+    <foreground_color>
+      <color red="0" green="0" blue="0" />
+    </foreground_color>
+    <actions hook="false" hook_all="false" />
+    <show_boolean_label>true</show_boolean_label>
+    <font>
+      <fontdata fontName="Segoe UI" height="9" style="1" />
+    </font>
+    <off_label>GO</off_label>
+  </widget>
+  <widget typeId="org.csstudio.opibuilder.widgets.TextInput" version="2.0.0">
+    <alarm_pulsing>false</alarm_pulsing>
+    <precision>0</precision>
+    <tooltip>$(pv_name)
+$(pv_value)</tooltip>
+    <horizontal_alignment>0</horizontal_alignment>
+    <rules />
+    <pv_value />
+    <auto_size>false</auto_size>
+    <text></text>
+    <rotation_angle>0.0</rotation_angle>
+    <show_units>true</show_units>
+    <height>49</height>
+    <multiline_input>false</multiline_input>
+    <border_width>1</border_width>
+    <visible>true</visible>
+    <pv_name>loc://screenToTest("")</pv_name>
+    <selector_type>1</selector_type>
+    <border_color>
+      <color red="0" green="0" blue="0" />
+    </border_color>
+    <precision_from_pv>true</precision_from_pv>
+    <widget_type>Text Input</widget_type>
+    <confirm_message></confirm_message>
+    <name>Text Input</name>
+    <style>0</style>
+    <actions hook="false" hook_all="false" />
+    <border_style>1</border_style>
+    <forecolor_alarm_sensitive>false</forecolor_alarm_sensitive>
+    <file_source>0</file_source>
+    <enabled>true</enabled>
+    <wuid>-4f5bdc12:1718381ff4c:-770e</wuid>
+    <transparent>false</transparent>
+    <scripts />
+    <border_alarm_sensitive>false</border_alarm_sensitive>
+    <scale_options>
+      <width_scalable>true</width_scalable>
+      <height_scalable>true</height_scalable>
+      <keep_wh_ratio>false</keep_wh_ratio>
+    </scale_options>
+    <file_return_part>0</file_return_part>
+    <backcolor_alarm_sensitive>false</backcolor_alarm_sensitive>
+    <format_type>0</format_type>
+    <limits_from_pv>false</limits_from_pv>
+    <background_color>
+      <color red="255" green="255" blue="255" />
+    </background_color>
+    <width>347</width>
+    <x>90</x>
+    <y>102</y>
+    <maximum>1.7976931348623157E308</maximum>
+    <foreground_color>
+      <color red="0" green="0" blue="0" />
+    </foreground_color>
+    <minimum>-1.7976931348623157E308</minimum>
+    <font>
+      <opifont.name fontName="Segoe UI" height="9" style="0">Default</opifont.name>
+    </font>
+  </widget>
+  <widget typeId="org.csstudio.opibuilder.widgets.Label" version="1.0.0">
+    <border_style>0</border_style>
+    <tooltip></tooltip>
+    <horizontal_alignment>1</horizontal_alignment>
+    <rules />
+    <enabled>true</enabled>
+    <wuid>-4f5bdc12:1718381ff4c:-7589</wuid>
+    <transparent>true</transparent>
+    <auto_size>false</auto_size>
+    <text>MAKE TEST SCREEN</text>
+    <scripts />
+    <height>55</height>
+    <border_width>1</border_width>
+    <scale_options>
+      <width_scalable>true</width_scalable>
+      <height_scalable>true</height_scalable>
+      <keep_wh_ratio>false</keep_wh_ratio>
+    </scale_options>
+    <visible>true</visible>
+    <vertical_alignment>1</vertical_alignment>
+    <border_color>
+      <color red="0" green="128" blue="255" />
+    </border_color>
+    <widget_type>Label</widget_type>
+    <wrap_words>false</wrap_words>
+    <background_color>
+      <color red="255" green="255" blue="255" />
+    </background_color>
+    <width>517</width>
+    <x>150</x>
+    <name>Label</name>
+    <y>36</y>
+    <foreground_color>
+      <color red="0" green="0" blue="0" />
+    </foreground_color>
+    <actions hook="false" hook_all="false" />
+    <font>
+      <fontdata fontName="Segoe UI" height="16" style="1" />
+    </font>
+  </widget>
+  <widget typeId="org.csstudio.opibuilder.widgets.TextUpdate" version="1.0.0">
+    <border_style>0</border_style>
+    <forecolor_alarm_sensitive>false</forecolor_alarm_sensitive>
+    <alarm_pulsing>false</alarm_pulsing>
+    <precision>0</precision>
+    <tooltip>$(pv_name)
+$(pv_value)</tooltip>
+    <horizontal_alignment>1</horizontal_alignment>
+    <rules />
+    <enabled>true</enabled>
+    <wuid>-10fe78bc:1718883b350:-7a57</wuid>
+    <transparent>false</transparent>
+    <pv_value />
+    <auto_size>false</auto_size>
+    <text>######</text>
+    <rotation_angle>0.0</rotation_angle>
+    <scripts />
+    <border_alarm_sensitive>true</border_alarm_sensitive>
+    <show_units>true</show_units>
+    <height>66</height>
+    <border_width>1</border_width>
+    <scale_options>
+      <width_scalable>true</width_scalable>
+      <height_scalable>true</height_scalable>
+      <keep_wh_ratio>false</keep_wh_ratio>
+    </scale_options>
+    <visible>true</visible>
+    <pv_name>loc://status("")</pv_name>
+    <vertical_alignment>1</vertical_alignment>
+    <border_color>
+      <color red="0" green="128" blue="255" />
+    </border_color>
+    <precision_from_pv>true</precision_from_pv>
+    <widget_type>Text Update</widget_type>
+    <backcolor_alarm_sensitive>false</backcolor_alarm_sensitive>
+    <wrap_words>false</wrap_words>
+    <format_type>0</format_type>
+    <background_color>
+      <color red="192" green="192" blue="192" />
+    </background_color>
+    <width>458</width>
+    <x>174</x>
+    <name>Text Update</name>
+    <y>216</y>
+    <foreground_color>
+      <color red="0" green="128" blue="0" />
+    </foreground_color>
+    <actions hook="false" hook_all="false" />
+    <font>
+      <fontdata fontName="Segoe UI" height="17" style="1" />
+    </font>
+  </widget>
+  <widget typeId="org.csstudio.opibuilder.widgets.Label" version="1.0.0">
+    <border_style>0</border_style>
+    <tooltip></tooltip>
+    <horizontal_alignment>0</horizontal_alignment>
+    <rules />
+    <enabled>true</enabled>
+    <wuid>-77f412c6:1718896793a:-7ae5</wuid>
+    <transparent>true</transparent>
+    <auto_size>false</auto_size>
+    <text>DIRECTIONS&#xD;
+1. Select file OPI file to use for test screen&#xD;
+2. Hit GO&#xD;
+3. Answer any prompts that appear&#xD;
+4. Wait for test screens to open.</text>
+    <scripts />
+    <height>157</height>
+    <border_width>1</border_width>
+    <scale_options>
+      <width_scalable>true</width_scalable>
+      <height_scalable>true</height_scalable>
+      <keep_wh_ratio>false</keep_wh_ratio>
+    </scale_options>
+    <visible>true</visible>
+    <vertical_alignment>0</vertical_alignment>
+    <border_color>
+      <color red="0" green="128" blue="255" />
+    </border_color>
+    <widget_type>Label</widget_type>
+    <wrap_words>false</wrap_words>
+    <background_color>
+      <color red="255" green="255" blue="255" />
+    </background_color>
+    <width>295</width>
+    <x>456</x>
+    <name>Label_1</name>
+    <y>102</y>
+    <foreground_color>
+      <color red="0" green="0" blue="0" />
+    </foreground_color>
+    <actions hook="false" hook_all="false" />
+    <font>
+      <opifont.name fontName="Segoe UI" height="9" style="0">Default</opifont.name>
+    </font>
+  </widget>
+</display>
